@@ -15,6 +15,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 // Listener Management for Optional Permissions
+// Listener Management for Optional Permissions
 let isDiscoveryInitialized = false;
 
 async function initializeDiscovery() {
@@ -22,13 +23,16 @@ async function initializeDiscovery() {
 
   const hasPerms = await chrome.permissions.contains(DISCOVERY_PERMS);
   if (!hasPerms) {
-    console.log("Discovery permissions not granted. Auto-Discovery disabled.");
     return;
   }
 
-  // Register navigation listener
+  // Register navigation listeners
   if (chrome.webNavigation) {
-    chrome.webNavigation.onCompleted.addListener(handleNavigation);
+    // onCommitted fires earlier than onCompleted
+    chrome.webNavigation.onCommitted.addListener(handleNavigation);
+    // Also listen for activation to ensure icon sync
+    chrome.tabs.onActivated.addListener(handleActivation);
+    
     isDiscoveryInitialized = true;
     console.log("Auto-Discovery initialized.");
   }
@@ -46,7 +50,8 @@ chrome.permissions.onAdded.addListener((perms) => {
 chrome.permissions.onRemoved.addListener((perms) => {
   if (perms.permissions?.includes('webNavigation')) {
     if (chrome.webNavigation && isDiscoveryInitialized) {
-      chrome.webNavigation.onCompleted.removeListener(handleNavigation);
+      chrome.webNavigation.onCommitted.removeListener(handleNavigation);
+      chrome.tabs.onActivated.removeListener(handleActivation);
       isDiscoveryInitialized = false;
       console.log("Auto-Discovery disabled.");
     }
@@ -58,6 +63,13 @@ async function handleNavigation(details) {
   // Only handle top-level frame navigation
   if (details.frameId !== 0) return;
   runSiteCheck(details.tabId, details.url);
+}
+
+async function handleActivation(activeInfo) {
+  const tab = await chrome.tabs.get(activeInfo.tabId);
+  if (tab && tab.url) {
+    runSiteCheck(tab.id, tab.url);
+  }
 }
 
 // Public API for Popup to trigger immediate checks
@@ -81,46 +93,51 @@ async function runSiteCheck(tabId, tabUrl) {
     const cachedEntry = cache[hostname];
 
     if (cachedEntry && (Date.now() - cachedEntry.timestamp < CACHE_TTL)) {
-      if (cachedEntry.hasFeed) {
-        setToolbarIcon(tabId, 'active');
-      } else {
-        setToolbarIcon(tabId, 'default');
-      }
+      setToolbarIcon(tabId, cachedEntry.hasFeed ? 'active' : 'default');
       return;
     }
 
-    // 2. Fetch and Discovery (using GET for robustness)
+    // 2. Fetch and Discovery
     const hasFeed = await performDiscovery(feedMenuUrl);
     
-    // 3. Update Cache
-    cache[hostname] = {
+    // 3. Update Cache (Atomic-ish)
+    // Re-get to minimize race conditions during the fetch
+    const freshStorage = await chrome.storage.local.get(['discoveryCache']);
+    const freshCache = freshStorage.discoveryCache || {};
+    
+    freshCache[hostname] = {
       hasFeed: hasFeed,
       timestamp: Date.now()
     };
     
     // Prune cache if it gets too large (> 500 domains)
-    const keys = Object.keys(cache);
+    const keys = Object.keys(freshCache);
     if (keys.length > 500) {
-      delete cache[keys[0]];
+      delete freshCache[keys[0]];
     }
     
-    await chrome.storage.local.set({ discoveryCache: cache });
+    await chrome.storage.local.set({ discoveryCache: freshCache });
 
     // 4. Update Icon
-    if (hasFeed) {
-      setToolbarIcon(tabId, 'active');
-    } else {
-      setToolbarIcon(tabId, 'default');
-    }
+    setToolbarIcon(tabId, hasFeed ? 'active' : 'default');
 
   } catch (e) {
-    console.warn("Discovery failed:", e);
+    // Fail silently but log for debug
+    console.warn("Discovery failed for", tabUrl, e);
   }
 }
 
 async function performDiscovery(url) {
   try {
-    const response = await fetch(url); // Default to GET
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout for background check
+
+    const response = await fetch(url, { 
+      signal: controller.signal,
+      cache: 'no-cache'
+    });
+    clearTimeout(timeoutId);
+    
     return response.ok;
   } catch (e) {
     return false;
@@ -128,21 +145,27 @@ async function performDiscovery(url) {
 }
 
 function setToolbarIcon(tabId, type) {
-  const iconPaths = type === 'active' 
+  // Ensure we provide a consistent set of resolutions
+  const path = type === 'active' 
     ? {
         "16": "icons/icon16.png",
+        "19": "icons/icon32.png", // Use 32 for 19 if missing
         "32": "icons/icon32.png",
+        "38": "icons/icon48.png", // Use 48 for 38 if missing
         "48": "icons/icon48.png"
       }
     : {
         "16": "icons/toolbar16.png",
         "19": "icons/toolbar19.png",
         "32": "icons/toolbar32.png",
-        "38": "icons/toolbar38.png"
+        "38": "icons/toolbar38.png",
+        "48": "icons/icon48.png"
       };
 
   chrome.action.setIcon({
     tabId: tabId,
-    path: iconPaths
+    path: path
+  }).catch(() => {
+    // Ignore errors if tab is already closed
   });
 }
