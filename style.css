@@ -37,17 +37,27 @@ body {
 }
 
 .container {
-  padding: 16px;
   background: var(--bg-color);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   min-height: 100px;
-  max-height: 500px;
+  max-height: 550px;
+  display: flex;
+  flex-direction: column;
   animation: fadeIn 0.3s ease-out;
+  overflow: hidden;
+}
+
+main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px; /* Move padding from container to main for scrolling */
 }
 
 header {
+  padding: 16px 16px 0 16px;
   margin-bottom: 20px;
+  flex-shrink: 0;
 }
 
 .header-main {
@@ -335,10 +345,10 @@ ul {
 
 /* Settings Section & Toggle Switch */
 .settings-section {
-  margin: 32px -16px -16px -16px;
   padding: 16px;
   background: var(--bg-settings);
   border-top: 1px solid var(--border-glass);
+  flex-shrink: 0;
 }
 
 .settings-row {
