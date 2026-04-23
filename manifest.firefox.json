@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Feed Menu",
+  "version": "1.0",
+  "description": "Displays available feeds for the current site from /.well-known/feed-menu.json",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/toolbar16.png",
+      "19": "icons/toolbar19.png",
+      "32": "icons/toolbar32.png",
+      "38": "icons/toolbar38.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "96": "icons/icon96.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "feedmenu@mnot.net",
+      "strict_min_version": "109.0"
+    }
+  }
+}

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feed Menu</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-main">
+        <h1>Feed Menu</h1>
+        <button id="reload-btn" title="Reload Feed Menu" aria-label="Reload">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+      </div>
+      <p id="site-url"></p>
+    </header>
+    
+    <main>
+      <div id="status" class="status-message">
+        <div class="loader"></div>
+        <span>Searching for feeds...</span>
+      </div>
+      
+      <ul id="feed-list" class="hidden">
+        <!-- Feeds will be injected here -->
+      </ul>
+      
+      <div id="empty-state" class="hidden">
+        <p>No feed menu found on this site.</p>
+        <small>Checked /.well-known/feed-menu.json</small>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-row">
+          <span>Auto-Discover Feeds</span>
+          <label class="switch">
+            <input type="checkbox" id="discovery-toggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <p class="settings-help">Highlights the icon when feeds are found. Requires additional permission.</p>
+      </div>
+    </main>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
