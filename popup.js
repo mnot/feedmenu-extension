@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const data = result.data;
         if (data && data.items && Array.isArray(data.items)) {
           // Check if there are any recognized items
-          const hasRecognizedItems = data.items.some(item => item['feed-title'] || item['feed-menu']);
+          const hasRecognizedItems = data.items.some(isRenderableItem);
           if (!hasRecognizedItems) {
             showError("The feed menu contains no recognized feeds.");
           } else {
@@ -182,15 +182,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     statusEl.classList.add('hidden');
     feedListEl.classList.remove('hidden');
     
+    if (!Array.isArray(items)) return;
+
     items.forEach(item => {
       if (item['feed-title']) {
         // It's a feed object
         renderFeedItem(item, container, origin);
-      } else if (item['feed-menu']) {
+      } else if (item['feed-menu'] && Array.isArray(item.items)) {
         // It's a menu object
         renderSubmenu(item, container, origin);
       }
     });
+  }
+
+  function isRenderableItem(item) {
+    if (!item || typeof item !== 'object') return false;
+    if (item['feed-title'] && (item.rss || item.atom)) return true;
+    return Boolean(item['feed-menu'] && Array.isArray(item.items) && item.items.some(isRenderableItem));
   }
 
   function renderFeedItem(feed, container, origin) {
