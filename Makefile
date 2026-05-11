@@ -21,7 +21,7 @@ safari: clean
 firefox:
 	@echo "Packaging Firefox version..."
 	@mkdir -p $(FIREFOX_DIR)
-	@cp -R icons background.js popup.js popup.html onboarding.html style.css test-feeds.json $(FIREFOX_DIR)/
+	@cp -R icons background.js popup.js popup.html onboarding.html style.css $(FIREFOX_DIR)/
 	@cp manifest.firefox.json $(FIREFOX_DIR)/manifest.json
 	@echo "Firefox build ready in $(FIREFOX_DIR)"
 

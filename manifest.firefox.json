@@ -5,7 +5,14 @@
   "description": "Displays available feeds for the current site from /.well-known/feed-menu.json",
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "scripting"
+  ],
+  "optional_permissions": [
+    "webNavigation"
+  ],
+  "optional_host_permissions": [
+    "*://*/.well-known/feed-menu.json"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -24,7 +31,9 @@
     "128": "icons/icon128.png"
   },
   "background": {
-    "service_worker": "background.js"
+    "scripts": [
+      "background.js"
+    ]
   },
   "browser_specific_settings": {
     "gecko": {
