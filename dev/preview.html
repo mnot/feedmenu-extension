@@ -108,13 +108,14 @@
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           </span>
           <span class="error-text"></span>
+          <button type="button" id="retry-btn" class="retry-btn">Try again</button>
         </div>
 
         <ul id="feed-list" class="hidden"></ul>
 
         <div id="empty-state" class="hidden">
-          <p>No feed menu found on this site.</p>
-          <small>Checked /.well-known/feed-menu.json</small>
+          <p>No feeds found on this site.</p>
+          <small>This site doesn't publish a feed menu.</small>
         </div>
       </main>
 

@@ -312,6 +312,31 @@ p#site-url {
   max-width: 32ch;
 }
 
+.retry-btn {
+  margin-top: 4px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent-text);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 18px;
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--ease),
+    border-color var(--motion-fast) var(--ease);
+}
+
+.retry-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-hover);
+}
+
+.retry-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* =========================================================================
    Feed list
    ========================================================================= */
@@ -356,10 +381,41 @@ ul {
 
 .feed-link {
   display: block;
-  padding: 10px 12px;
+  padding: 10px 40px 10px 12px; /* right padding clears the copy button */
   text-decoration: none;
   color: inherit;
   border-radius: var(--radius);
+}
+
+/* Copy-URL fallback: quiet at rest, always keyboard-reachable */
+.copy-btn {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary); /* full secondary keeps the icon ≥3:1 (AA) at rest */
+  border-radius: var(--radius);
+  transition: background var(--motion-fast) var(--ease),
+    color var(--motion-fast) var(--ease);
+}
+
+.copy-btn:hover,
+.copy-btn:focus-visible {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.copy-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .feed-link:focus-visible {
@@ -610,9 +666,38 @@ input:checked + .slider:before {
   font-size: 16px;
   color: var(--text-secondary);
   line-height: 1.6;
-  margin: 0 auto 36px auto;
+  margin: 0 auto 32px auto;
   max-width: 46ch;
   text-wrap: pretty;
+}
+
+.onboarding-explainer {
+  text-align: left;
+  max-width: 46ch;
+  margin: 0 auto 32px auto;
+}
+
+.onboarding-explainer h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+}
+
+.onboarding-explainer p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.onboarding-steps-lead {
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
 }
 
 .instruction-step {

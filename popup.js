@@ -1,14 +1,19 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  const titleEl = document.querySelector('h1');
   const statusEl = document.getElementById('status');
   const errorStateEl = document.getElementById('error-state');
   const errorTextEl = errorStateEl.querySelector('.error-text');
+  const retryBtn = document.getElementById('retry-btn');
   const feedListEl = document.getElementById('feed-list');
   const emptyStateEl = document.getElementById('empty-state');
   const siteUrlEl = document.getElementById('site-url');
   const reloadBtn = document.getElementById('reload-btn');
 
+  let submenuCounter = 0; // declared up front so rendering never hits its TDZ
+
   async function loadFeedMenu() {
     // Reset UI to the loading state
+    titleEl.textContent = 'Feed Menu'; // reset; renderMenu may rename it on success
     statusEl.classList.remove('hidden');
     errorStateEl.classList.add('hidden');
     feedListEl.classList.add('hidden');
@@ -21,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // 1. Get the current active tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab || !tab.url) {
-        showError("No active tab found.");
+        showError("We couldn't find an active tab to check.");
         return;
       }
 
@@ -30,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // 1.1 Check if we can actually run on this page (skip chrome://, about:, extension:// etc)
       if (!url.protocol.startsWith('http')) {
-        showError("Feed Menu cannot run on internal browser pages.");
+        showError("Feed Menu doesn't work on browser pages like this one. Open a website and try again.");
         return;
       }
 
@@ -86,18 +91,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // 5. Render the feeds
       if (!result) {
-        showError("Failed to communicate with the page.");
+        showError("We couldn't read this page. Reload the page, then try again.");
       } else if (!result.ok) {
         if (result.status === 404) {
           showEmpty();
         } else if (result.status) {
-          showError(`Server error: ${result.status}`);
+          showError(`This site's server had a problem (error ${result.status}). Try again in a moment.`);
         } else if (result.parseError) {
-          showError("The feed menu document is malformed.");
+          showError("This site's feed list looks broken, so we can't show it.");
         } else if (result.fetchError === 'Timeout') {
-          showError("The request timed out.");
+          showError("The site took too long to respond. Check your connection and try again.");
         } else {
-          showError("Could not fetch the feed menu.");
+          showError("We couldn't reach this site. Check your connection and try again.");
         }
       } else {
         const data = result.data;
@@ -105,21 +110,20 @@ document.addEventListener('DOMContentLoaded', async () => {
           // Check if there are any recognized items
           const hasRecognizedItems = data.items.some(isRenderableItem);
           if (!hasRecognizedItems) {
-            showError("The feed menu contains no recognized feeds.");
+            showError("This site has a feed menu, but there are no feeds in it yet.");
           } else {
             if (data['feed-menu']) {
-              const h1 = document.querySelector('h1');
-              if (h1) h1.textContent = data['feed-menu'];
+              titleEl.textContent = data['feed-menu'];
             }
             renderMenu(data.items, feedListEl, url.origin);
           }
         } else {
-          showError("The feed menu is not in a recognized format.");
+          showError("We found a feed menu, but it's in a format Feed Menu doesn't support.");
         }
       }
     } catch (error) {
       console.warn("Feed Menu check failed:", error);
-      showError("An unexpected error occurred.");
+      showError("Something went wrong. Try again.");
     } finally {
       reloadBtn.classList.remove('loading');
       reloadBtn.disabled = false;
@@ -129,8 +133,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Initial load
   loadFeedMenu();
 
-  // Reload button listener
+  // Reload + in-context retry
   reloadBtn.addEventListener('click', loadFeedMenu);
+  retryBtn.addEventListener('click', loadFeedMenu);
 
   // 6. Handle Discovery Toggle
   const discoveryToggle = document.getElementById('discovery-toggle');
@@ -204,16 +209,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const li = document.createElement('li');
     li.className = 'feed-item';
-    
+
     const a = document.createElement('a');
     a.href = absoluteUrl;
     a.className = 'feed-link';
-    
+
     const title = document.createElement('span');
     title.className = 'feed-title';
     title.textContent = feed['feed-title'] || "Untitled Feed";
     a.appendChild(title);
-    
+
     if (feed.description) {
       const desc = document.createElement('span');
       desc.className = 'feed-description';
@@ -224,30 +229,56 @@ document.addEventListener('DOMContentLoaded', async () => {
     const urlDisp = document.createElement('span');
     urlDisp.className = 'feed-url';
     urlDisp.textContent = absoluteUrl;
-    
+
+    // Live region so screen readers announce the handoff / copy result.
     const statusBadge = document.createElement('span');
     statusBadge.className = 'status-badge hidden';
-    statusBadge.textContent = 'Opening in Reader...';
-    
+    statusBadge.setAttribute('role', 'status');
+    statusBadge.setAttribute('aria-live', 'polite');
+
     a.appendChild(urlDisp);
     a.appendChild(statusBadge);
+
+    // Always-available fallback: copy the feed URL. The handoff below needs a
+    // feed reader installed; copying gives users a path even without one.
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'copy-btn';
+    copyBtn.setAttribute('aria-label', `Copy URL for ${feed['feed-title'] || 'feed'}`);
+    copyBtn.title = 'Copy feed URL';
+    copyBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+
     li.appendChild(a);
+    li.appendChild(copyBtn);
     container.appendChild(li);
 
-    // Handle Click for Seamless Handoff
+    let badgeTimer;
+    function flashBadge(text) {
+      statusBadge.textContent = text;
+      statusBadge.classList.remove('hidden');
+      clearTimeout(badgeTimer);
+      badgeTimer = setTimeout(() => statusBadge.classList.add('hidden'), 2000);
+    }
+
+    // Handle Click for Seamless Handoff to a feed reader.
     a.addEventListener('click', (e) => {
       if (e.metaKey || e.shiftKey || e.ctrlKey) return;
       e.preventDefault();
-      
-      statusBadge.classList.remove('hidden');
-      setTimeout(() => statusBadge.classList.add('hidden'), 2000);
 
+      flashBadge('Opening in your feed reader…');
       const protocolUrl = absoluteUrl.replace(/^https?:\/\//, 'feed://');
       triggerHandoff(protocolUrl);
     });
-  }
 
-  let submenuCounter = 0;
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(absoluteUrl);
+        flashBadge('Link copied');
+      } catch (err) {
+        flashBadge('Copy failed — select the URL to copy it');
+      }
+    });
+  }
 
   function renderSubmenu(menu, container, origin) {
     const li = document.createElement('li');
