@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feed Menu — dev preview</title>
+
+<!--
+  Drift-free preview harness for the popup.
+
+  It loads the REAL style.css and popup.js and feeds them a stubbed `chrome`
+  API plus sample data, so every state renders through the production code path
+  (no hand-written markup to fall out of sync). Open it straight from disk:
+
+      open dev/preview.html        # macOS; or just double-click it
+
+  Controls (top bar):
+    - Skin:     swap the data-platform attribute (chrome / firefox / safari)
+    - State:    force each branch popup.js can render (found, empty, errors…)
+  Dark mode:    toggle your OS appearance, or use DevTools
+                (Rendering ▸ Emulate CSS prefers-color-scheme).
+
+  Not loaded here: platform.js (skin is driven manually by the Skin control)
+  and background.js (no service worker in a plain page).
+-->
+
+<link rel="stylesheet" href="../style.css">
+<style>
+  /* Harness chrome only — never reuse style.css tokens here, so the popup
+     under test is the only thing those tokens affect. */
+  body {
+    width: auto;            /* override style.css's 320px popup width */
+    margin: 0;
+    background: #6b7280;
+    font-family: system-ui, sans-serif;
+  }
+  .toolbar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 12px 20px;
+    background: #1f2937;
+    color: #f9fafb;
+    font-size: 13px;
+  }
+  .toolbar label { display: flex; align-items: center; gap: 6px; }
+  .toolbar select {
+    font: inherit;
+    padding: 4px 6px;
+    border-radius: 6px;
+    border: 1px solid #4b5563;
+    background: #111827;
+    color: #f9fafb;
+  }
+  .toolbar .hint { margin-left: auto; opacity: 0.7; font-size: 12px; }
+  .stage { padding: 40px 20px; }
+  .popup-frame {
+    width: 320px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.35);
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <label>Skin
+    <select id="ctl-skin">
+      <option value="chrome">Chrome</option>
+      <option value="firefox">Firefox</option>
+      <option value="safari">Safari</option>
+    </select>
+  </label>
+  <label>State
+    <select id="ctl-state"></select>
+  </label>
+  <span class="hint">Dark mode: toggle your OS appearance or DevTools ▸ emulate prefers-color-scheme</span>
+</div>
+
+<div class="stage">
+  <div class="popup-frame">
+    <!-- Mirror of popup.html's body so popup.js finds the elements it expects.
+         Markup that popup.js GENERATES (feed items, submenus) is not duplicated
+         here — that's the whole point; it comes from the real render functions. -->
+    <div class="container">
+      <header>
+        <div class="header-main">
+          <h1>Feed Menu</h1>
+          <button id="reload-btn" title="Reload Feed Menu" aria-label="Reload">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          </button>
+        </div>
+        <p id="site-url"></p>
+      </header>
+
+      <main>
+        <div id="status" class="status-message" role="status" aria-live="polite">
+          <div class="loader"></div>
+          <span>Searching for feeds...</span>
+        </div>
+
+        <div id="error-state" class="status-message status-error hidden" role="alert">
+          <span class="error-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </span>
+          <span class="error-text"></span>
+          <button type="button" id="retry-btn" class="retry-btn">Try again</button>
+        </div>
+
+        <ul id="feed-list" class="hidden"></ul>
+
+        <div id="empty-state" class="hidden">
+          <p>No feeds found on this site.</p>
+          <small>This site doesn't publish a feed menu.</small>
+        </div>
+      </main>
+
+      <div class="settings-section">
+        <div class="settings-row">
+          <span>Auto-Discover Feeds</span>
+          <label class="switch">
+            <input type="checkbox" id="discovery-toggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <p class="settings-help">Highlights the icon when feeds are found. Requires additional permission.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stub `chrome` BEFORE popup.js runs. popup.js calls these and nothing else. -->
+<script>
+(function () {
+  // Sample feed-menu.json (draft-nottingham-feed-menu shape).
+  const SAMPLE = {
+    "feed-menu": "Example Feeds",
+    "items": [
+      { "feed-title": "Main Feed", "rss": "/feed.xml",
+        "description": "All articles published on the site, newest first." },
+      { "feed-menu": "Topics", "items": [
+        { "feed-title": "Engineering", "atom": "/eng.atom" },
+        { "feed-title": "Design", "rss": "/design.xml",
+          "description": "Notes on craft and visual systems." }
+      ]},
+      { "feed-title": "Podcast", "rss": "https://cdn.example.com/podcast.xml",
+        "description": "Weekly episodes." }
+    ]
+  };
+
+  // Each entry maps to the object popup.js's injected fetch would return.
+  const SCENARIOS = {
+    found:     { label: "Feeds found",            result: { ok: true,  data: SAMPLE } },
+    empty:     { label: "Empty (404)",            result: { ok: false, status: 404 } },
+    server:    { label: "Server error (500)",     result: { ok: false, status: 500 } },
+    malformed: { label: "Malformed JSON",         result: { ok: false, parseError: true } },
+    timeout:   { label: "Request timed out",      result: { ok: false, fetchError: "Timeout" } },
+    norecog:   { label: "No recognized feeds",    result: { ok: true,  data: { items: [{ note: "x" }] } } },
+    badformat: { label: "Unrecognized format",    result: { ok: true,  data: {} } },
+    commfail:  { label: "Page comm failure",      result: undefined },
+    internal:  { label: "Internal browser page",  tabUrl: "chrome://extensions", result: { ok: true, data: SAMPLE } },
+  };
+
+  let current = "found";
+  window.__setScenario = (key) => { current = key; };
+  window.__SCENARIOS = SCENARIOS;
+
+  const tabFor = () => ({ id: 1, url: SCENARIOS[current].tabUrl || "https://www.example.com" });
+
+  window.chrome = {
+    tabs: {
+      // Supports both await and callback styles, like MV3.
+      query(_info, cb) {
+        const res = [tabFor()];
+        if (typeof cb === "function") { cb(res); return; }
+        return Promise.resolve(res);
+      },
+      update(_id, _props) { /* no-op: don't navigate the harness on feed click */ },
+    },
+    scripting: {
+      executeScript() {
+        return Promise.resolve([{ result: SCENARIOS[current].result }]);
+      },
+    },
+    i18n: {
+      getAcceptLanguages(cb) { cb(["en-US", "en"]); },
+    },
+    permissions: {
+      contains() { return Promise.resolve(false); },
+      request()  { return Promise.resolve(true); },
+      remove()   { return Promise.resolve(true); },
+    },
+    runtime: {
+      sendMessage() { /* no-op */ },
+    },
+  };
+})();
+</script>
+
+<!-- The real popup logic, exercised exactly as it ships. -->
+<script src="../popup.js"></script>
+
+<!-- Harness controls (run after popup.js so #reload-btn's listener exists). -->
+<script>
+(function () {
+  const root = document.documentElement;
+  const skinSel = document.getElementById("ctl-skin");
+  const stateSel = document.getElementById("ctl-state");
+
+  // Default skin (no platform.js here).
+  root.setAttribute("data-platform", skinSel.value);
+  skinSel.addEventListener("change", () => {
+    root.setAttribute("data-platform", skinSel.value);
+  });
+
+  // Populate state options from the stub's scenario map.
+  for (const [key, s] of Object.entries(window.__SCENARIOS)) {
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = s.label;
+    stateSel.appendChild(opt);
+  }
+  stateSel.value = "found";
+  stateSel.addEventListener("change", () => {
+    window.__setScenario(stateSel.value);
+    document.getElementById("reload-btn").click(); // re-run loadFeedMenu()
+  });
+})();
+</script>
+
+</body>
+</html>

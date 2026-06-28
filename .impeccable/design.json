@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-29T00:00:00Z",
+  "title": "Design System: Feed Menu",
+  "extensions": {
+    "colorMeta": {
+      "accent-chrome": {
+        "role": "primary",
+        "displayName": "Chrome Blue",
+        "canonical": "#1a73e8",
+        "tonalRamp": ["#0b285a", "#103a82", "#1450a8", "#1a73e8", "#4a90ec", "#7db0f2", "#b3d1f8", "#e3eefc"]
+      },
+      "accent-firefox": {
+        "role": "primary",
+        "displayName": "Firefox Blue",
+        "canonical": "#0060df",
+        "tonalRamp": ["#04204a", "#073270", "#0a4aa8", "#0060df", "#3d85ea", "#74a9f1", "#adccf7", "#e1ecfc"]
+      },
+      "accent-safari": {
+        "role": "primary",
+        "displayName": "Safari Blue",
+        "canonical": "#007aff",
+        "tonalRamp": ["#002a57", "#003f80", "#0059b3", "#007aff", "#3d9aff", "#74b8ff", "#aed5ff", "#e3f0ff"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#202124",
+        "tonalRamp": ["#202124", "#3c4043", "#5f6368", "#80868b", "#9aa0a6", "#bdc1c6", "#dadce0", "#f1f3f4"]
+      },
+      "error": {
+        "role": "error",
+        "displayName": "Alert Red",
+        "canonical": "#c5221f",
+        "tonalRamp": ["#5a0f0e", "#7d1614", "#a01c19", "#c5221f", "#dc4b48", "#e98582", "#f3b8b6", "#fae3e3"]
+      }
+    },
+    "typographyMeta": {
+      "title": { "displayName": "Title", "purpose": "Popup heading (h1): the feed-menu name. One per popup." },
+      "body": { "displayName": "Body", "purpose": "Feed titles, submenu labels, settings row. The workhorse." },
+      "caption": { "displayName": "Caption", "purpose": "Feed descriptions. Wraps." },
+      "meta": { "displayName": "Meta", "purpose": "Feed URLs and site hostname. Single-line, truncated." },
+      "label": { "displayName": "Label", "purpose": "Transient uppercase status badge only ('Opening in Reader…')." }
+    },
+    "shadows": [
+      { "name": "hover-lift-chrome", "value": "0 1px 2px rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)", "purpose": "Material elevation on a hovered feed row (Chrome skin)." },
+      { "name": "hover-lift-safari", "value": "0 4px 16px rgba(0,0,0,0.12)", "purpose": "Soft ambient glow under a hovered feed row on glass (Safari skin)." }
+    ],
+    "motion": [
+      { "name": "fast", "value": "150ms", "purpose": "Instant feedback: button press, color/background shifts, focus." },
+      { "name": "med", "value": "220ms", "purpose": "State changes: submenu open, toggle slide, fades." },
+      { "name": "ease", "value": "cubic-bezier(0.25, 1, 0.5, 1)", "purpose": "Ease-out-quart. Default easing for every transition." }
+    ],
+    "breakpoints": [
+      { "name": "popup", "value": "320px", "purpose": "The popup is a fixed 320px column; it does not respond. The onboarding page is the only fluid surface." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Feed Row",
+      "kind": "card",
+      "refersTo": "feed-item",
+      "description": "A single feed in the list: title, optional description, truncated URL. The signature component. Lifts on hover, outlines its border on focus-within.",
+      "html": "<ul class=\"ds-feed-list\"><li class=\"ds-feed-item\"><a class=\"ds-feed-link\" href=\"#\"><span class=\"ds-feed-title\">Main Feed</span><span class=\"ds-feed-desc\">All articles published on the site, newest first.</span><span class=\"ds-feed-url\">https://www.example.com/feed.xml</span></a></li></ul>",
+      "css": ".ds-feed-list { list-style: none; padding: 0; margin: 0; } .ds-feed-item { background: #ffffff; border: 1px solid #dadce0; border-radius: 8px; margin-bottom: 6px; transition: background 150ms cubic-bezier(0.25,1,0.5,1), border-color 150ms cubic-bezier(0.25,1,0.5,1), box-shadow 150ms cubic-bezier(0.25,1,0.5,1); } .ds-feed-item:hover { background: #f1f3f4; box-shadow: 0 1px 2px rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15); } .ds-feed-item:focus-within { border-color: #1a73e8; } .ds-feed-link { display: block; padding: 10px 12px; text-decoration: none; color: #202124; border-radius: 8px; font-family: system-ui, 'Segoe UI', Roboto, sans-serif; } .ds-feed-link:focus-visible { outline: 2px solid #1a73e8; outline-offset: -2px; } .ds-feed-title { display: block; font-weight: 500; font-size: 14px; } .ds-feed-item:hover .ds-feed-title { color: #1967d2; } .ds-feed-desc { display: block; font-size: 12px; line-height: 1.4; margin-top: 4px; } .ds-feed-url { display: block; font-size: 11px; color: #5f6368; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }"
+    },
+    {
+      "name": "Submenu Toggle",
+      "kind": "button",
+      "refersTo": "menu-toggle",
+      "description": "Full-width button that expands a nested group of feeds. Click/keyboard toggles aria-expanded; the chevron rotates. Never hover-only.",
+      "html": "<div class=\"ds-menu-item\"><button type=\"button\" class=\"ds-menu-toggle\" aria-expanded=\"true\"><span>Topics</span><svg class=\"ds-chevron\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"9 18 15 12 9 6\"></polyline></svg></button></div>",
+      "css": ".ds-menu-item { background: #ffffff; border: 1px solid #dadce0; border-radius: 8px; } .ds-menu-toggle { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; font-family: system-ui, 'Segoe UI', Roboto, sans-serif; font-weight: 600; font-size: 14px; color: #202124; padding: 10px 12px; border-radius: 8px; transition: color 150ms cubic-bezier(0.25,1,0.5,1); } .ds-menu-toggle:hover { color: #1967d2; } .ds-menu-toggle:focus-visible { outline: 2px solid #1a73e8; outline-offset: -2px; } .ds-chevron { color: #5f6368; transition: transform 220ms cubic-bezier(0.25,1,0.5,1); } .ds-menu-toggle[aria-expanded=\"true\"] .ds-chevron { transform: rotate(90deg); }"
+    },
+    {
+      "name": "Reload Button",
+      "kind": "button",
+      "refersTo": "reload-button",
+      "description": "Icon-only refresh control in the header. Muted at rest, fills on hover, spins while loading.",
+      "html": "<button type=\"button\" class=\"ds-reload\" aria-label=\"Reload\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M23 4v6h-6M1 20v-6h6\"></path><path d=\"M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15\"></path></svg></button>",
+      "css": ".ds-reload { display: flex; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; color: #5f6368; padding: 6px; border-radius: 8px; transition: background 150ms cubic-bezier(0.25,1,0.5,1), color 150ms cubic-bezier(0.25,1,0.5,1); } .ds-reload:hover { background: #f1f3f4; color: #202124; } .ds-reload:focus-visible { outline: 2px solid #1a73e8; outline-offset: 2px; }"
+    },
+    {
+      "name": "Toggle Switch",
+      "kind": "custom",
+      "refersTo": "switch-on",
+      "description": "The auto-discovery toggle in the settings band. Track fills with the host accent when on; knob slides 16px.",
+      "html": "<label class=\"ds-switch\"><input type=\"checkbox\" checked><span class=\"ds-slider\"></span></label>",
+      "css": ".ds-switch { position: relative; display: inline-block; width: 38px; height: 22px; } .ds-switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; } .ds-slider { position: absolute; inset: 0; background-color: #dadce0; border: 1px solid #dadce0; border-radius: 22px; transition: background-color 220ms cubic-bezier(0.25,1,0.5,1); pointer-events: none; } .ds-slider::before { content: ''; position: absolute; height: 16px; width: 16px; left: 2px; bottom: 2px; background: #ffffff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 220ms cubic-bezier(0.25,1,0.5,1); } .ds-switch input:checked + .ds-slider { background-color: #1a73e8; border-color: #1a73e8; } .ds-switch input:checked + .ds-slider::before { transform: translateX(16px); } .ds-switch input:focus-visible + .ds-slider { outline: 2px solid #1a73e8; outline-offset: 2px; }"
+    },
+    {
+      "name": "Error State",
+      "kind": "custom",
+      "refersTo": "error-state",
+      "description": "The failure state: a red alert glyph above a message, centered. Distinct from the loading spinner so a failure never reads as a stalled load.",
+      "html": "<div class=\"ds-error\" role=\"alert\"><span class=\"ds-error-icon\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"></line><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"></line></svg></span><span class=\"ds-error-text\">The request timed out.</span></div>",
+      "css": ".ds-error { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px 8px; text-align: center; font-family: system-ui, 'Segoe UI', Roboto, sans-serif; } .ds-error-icon { display: flex; color: #c5221f; } .ds-error-text { font-size: 13px; line-height: 1.45; color: #202124; max-width: 32ch; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "One Voice, Three Dialects",
+    "overview": "Feed Menu is a single popup structure that speaks three browser-native dialects. The markup, spacing rhythm, component vocabulary, and interaction model are shared and constant; only a set of semantic design tokens swaps at runtime, keyed off a [data-platform] attribute set before first paint. On Safari it speaks macOS glass; on Chrome, Material-flat; on Firefox, Photon. The user never sees a 'brand' — they see something that looks like it shipped with their browser. This is a product system, not a brand surface: it serves a 30-second task inside a 320px panel and then disappears. It rejects cluttered enterprise chrome, novelty animation, decorative glass on browsers that don't use glass, and any single house style forced onto all three browsers.",
+    "keyCharacteristics": [
+      "One structure, three runtime-selected skins (Safari glass / Chrome Material / Firefox Photon).",
+      "Light and dark for every skin, via prefers-color-scheme.",
+      "Restrained color: one host-native accent, used only for action, selection, and state.",
+      "Flat by default; depth comes from hairline borders, not shadow (Safari excepted).",
+      "Self-explanatory: loading, found, empty, and error are all distinct, designed states."
+    ],
+    "rules": [
+      { "name": "The Host-Dialect Rule", "body": "Surface, border, accent, radius, and font are sourced from the host browser via [data-platform]. Never ship one browser's accent or surface treatment to another; a Google-blue toggle in Firefox is a bug.", "section": "colors" },
+      { "name": "The AA-Text Rule", "body": "When the accent is rendered as text on a light surface, use the accent-text token, never the fill accent. The fill accent is for backgrounds, icons, and borders.", "section": "colors" },
+      { "name": "The System-Font Rule", "body": "Always the host's system font; never a bundled or web-loaded typeface. The font is part of the native disguise.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces are flat at rest. A shadow is a state response (hover), never an ambient decoration. If a skin is flat (Firefox), it stays flat — express hover through border and background, not elevation.", "section": "elevation" },
+      { "name": "The Glass-Is-Safari-Only Rule", "body": "backdrop-filter and translucent surfaces appear on Safari and nowhere else. On Chrome and Firefox, every surface is opaque.", "section": "elevation" },
+      { "name": "The No-Hover-Only Rule", "body": "No affordance may depend on :hover. Submenus open on click/keyboard; hover is enhancement only.", "section": "components" },
+      { "name": "The Honest-State Rule", "body": "Loading, found, empty, and error are four visually distinct states. An error must never reuse the loading slot.", "section": "components" }
+    ],
+    "dos": [
+      "Do source every visible token (accent, surface, border, radius, font) from the host browser via [data-platform]. Make a Firefox build look like Firefox.",
+      "Do keep surfaces flat by default; let 1px hairline borders carry structure. Shadow is a hover response only.",
+      "Do use the host system font, always.",
+      "Do use the darker accent-text token whenever the accent is text on a light surface.",
+      "Do keep all four states (loading / found / empty / error) visually distinct, and keep every affordance keyboard-reachable.",
+      "Do honor prefers-color-scheme and prefers-reduced-motion in every skin."
+    ],
+    "donts": [
+      "Don't be cluttered or heavy. No dense, busy, enterprise-extension chrome.",
+      "Don't be gimmicky. No mascots, no heavy gradients, no novelty animation.",
+      "Don't be over-glassy. backdrop-filter is Safari-only; decorative blur is forbidden.",
+      "Don't ship one skin to all browsers. The macOS glass look on Chrome or Firefox reads as a foreign Mac transplant.",
+      "Don't use the fill accent as body text (Apple blue #007aff is ~3.9:1 — fails AA).",
+      "Don't use border-left/border-right greater than 1px as a colored accent stripe. Full hairline borders only.",
+      "Don't gate any function on :hover. If it only works on hover, it's broken for keyboard and touch.",
+      "Don't let an error state look like a stalled load. Distinct glyph, distinct color, no spinner."
+    ]
+  }
+}
