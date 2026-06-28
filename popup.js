@@ -1,30 +1,16 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const statusEl = document.getElementById('status');
+  const errorStateEl = document.getElementById('error-state');
+  const errorTextEl = errorStateEl.querySelector('.error-text');
   const feedListEl = document.getElementById('feed-list');
   const emptyStateEl = document.getElementById('empty-state');
   const siteUrlEl = document.getElementById('site-url');
   const reloadBtn = document.getElementById('reload-btn');
 
   async function loadFeedMenu() {
-    // Reset UI state
+    // Reset UI to the loading state
     statusEl.classList.remove('hidden');
-    
-    // Ensure loader exists
-    let loader = statusEl.querySelector('.loader');
-    if (!loader) {
-      loader = document.createElement('div');
-      loader.className = 'loader';
-      statusEl.appendChild(loader);
-    }
-    
-    // Ensure span exists
-    let span = statusEl.querySelector('span');
-    if (!span) {
-      span = document.createElement('span');
-      statusEl.appendChild(span);
-    }
-    span.textContent = 'Searching for feeds...';
-    
+    errorStateEl.classList.add('hidden');
     feedListEl.classList.add('hidden');
     feedListEl.innerHTML = ''; // Clear current items
     emptyStateEl.classList.add('hidden');
@@ -180,6 +166,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function renderMenu(items, container, origin) {
     statusEl.classList.add('hidden');
+    errorStateEl.classList.add('hidden');
     feedListEl.classList.remove('hidden');
     
     if (!Array.isArray(items)) return;
@@ -260,24 +247,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  let submenuCounter = 0;
+
   function renderSubmenu(menu, container, origin) {
     const li = document.createElement('li');
     li.className = 'menu-item has-submenu';
-    
-    const title = document.createElement('div');
+
+    const submenuId = `submenu-${submenuCounter++}`;
+
+    // A real <button> so the submenu opens via mouse, keyboard, and touch alike
+    // (the previous hover-only expansion was unreachable by keyboard).
+    const title = document.createElement('button');
+    title.type = 'button';
     title.className = 'menu-title';
-    title.textContent = menu['feed-menu'];
-    
+    title.setAttribute('aria-expanded', 'false');
+    title.setAttribute('aria-controls', submenuId);
+
+    const label = document.createElement('span');
+    label.className = 'menu-label';
+    label.textContent = menu['feed-menu'];
+    title.appendChild(label);
+
     const chevron = document.createElement('span');
     chevron.className = 'chevron';
+    chevron.setAttribute('aria-hidden', 'true');
     chevron.textContent = '›';
     title.appendChild(chevron);
-    
+
     const submenuUl = document.createElement('ul');
     submenuUl.className = 'submenu';
-    
+    submenuUl.id = submenuId;
+
     renderMenu(menu.items, submenuUl, origin);
-    
+
+    title.addEventListener('click', () => {
+      const isOpen = li.classList.toggle('open');
+      title.setAttribute('aria-expanded', String(isOpen));
+    });
+
     li.appendChild(title);
     li.appendChild(submenuUl);
     container.appendChild(li);
@@ -295,18 +302,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function showEmpty() {
     statusEl.classList.add('hidden');
+    errorStateEl.classList.add('hidden');
+    feedListEl.classList.add('hidden');
     emptyStateEl.classList.remove('hidden');
   }
 
   function showError(msg) {
-    statusEl.classList.remove('hidden');
-    let span = statusEl.querySelector('span');
-    if (!span) {
-      statusEl.innerHTML = '<span></span>';
-      span = statusEl.querySelector('span');
-    }
-    span.textContent = msg;
-    const loader = statusEl.querySelector('.loader');
-    if (loader) loader.remove();
+    statusEl.classList.add('hidden');
+    feedListEl.classList.add('hidden');
+    emptyStateEl.classList.add('hidden');
+    errorTextEl.textContent = msg;
+    errorStateEl.classList.remove('hidden');
   }
 });
