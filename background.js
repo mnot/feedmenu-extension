@@ -33,58 +33,84 @@ chrome.runtime.onInstalled.addListener((details) => {
   console.log("Feed Menu extension installed.");
 });
 
-// Listener Management for Optional Permissions
-// Listener Management for Optional Permissions
-let isDiscoveryInitialized = false;
-
-async function initializeDiscovery() {
-  if (isDiscoveryInitialized) return;
-
-  const hasPerms = await chrome.permissions.contains(DISCOVERY_PERMS);
-  if (!hasPerms) {
-    return;
-  }
-
-  // Register navigation listeners
-  if (chrome.webNavigation) {
-    // onCommitted fires earlier than onCompleted
+// Discovery listeners must be registered SYNCHRONOUSLY at the top level of the
+// service worker. MV3 background workers are non-persistent: Safari (and
+// Chrome) unload them when idle and only re-wake them for an event whose
+// listener was registered during the worker's *initial* evaluation. The old
+// code registered these inside an async function, after `await
+// permissions.contains(...)` — so once Safari suspended the worker it never
+// woke for navigations and discovery silently never ran (the background content
+// showed "Not Loaded"). Register up front instead, and gate on the permission
+// inside each handler.
+//
+// chrome.webNavigation only exists once the optional permission is granted, so
+// this fires whenever the permission is already in place at worker startup;
+// onAdded (below) covers granting it mid-session.
+function registerDiscoveryListeners() {
+  if (!chrome.webNavigation?.onCommitted) return;
+  // onCommitted fires earlier than onCompleted.
+  if (!chrome.webNavigation.onCommitted.hasListener(handleNavigation)) {
     chrome.webNavigation.onCommitted.addListener(handleNavigation);
-    // Also listen for activation to ensure icon sync
+  }
+  // Also catch tab switches, so the indicator is right for the active tab.
+  if (!chrome.tabs.onActivated.hasListener(handleActivation)) {
     chrome.tabs.onActivated.addListener(handleActivation);
-    
-    isDiscoveryInitialized = true;
-    console.log("Auto-Discovery initialized.");
   }
 }
 
-// Re-check on startup or when permissions change
-initializeDiscovery();
+registerDiscoveryListeners();
 
-chrome.permissions.onAdded.addListener((perms) => {
-  if (perms.permissions?.includes('webNavigation')) {
-    initializeDiscovery();
-  }
+// One-time startup diagnostic so the background console is conclusive about
+// whether discovery can run, rather than leaving us to infer from a silent
+// absence of activity.
+chrome.permissions.contains(DISCOVERY_PERMS)
+  .then((hasPerms) => {
+    console.log(`Feed Menu: discovery permission=${hasPerms}, webNavigation API=${!!chrome.webNavigation}`);
+  })
+  .catch(() => {});
+
+// Granting the permission mid-session makes chrome.webNavigation appear, so
+// register then too (the startup call above ran with it undefined) and check
+// the current tab right away so the indicator shows without waiting to navigate.
+chrome.permissions.onAdded.addListener(async (perms) => {
+  if (!perms.permissions?.includes('webNavigation')) return;
+  registerDiscoveryListeners();
+  console.log("Feed Menu: discovery permission granted.");
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab && tab.url) runSiteCheck(tab.id, tab.url);
+  } catch (e) { /* no active tab to check */ }
 });
 
 chrome.permissions.onRemoved.addListener((perms) => {
-  if (perms.permissions?.includes('webNavigation')) {
-    if (chrome.webNavigation && isDiscoveryInitialized) {
-      chrome.webNavigation.onCommitted.removeListener(handleNavigation);
-      chrome.tabs.onActivated.removeListener(handleActivation);
-      isDiscoveryInitialized = false;
-      console.log("Auto-Discovery disabled.");
-    }
-  }
+  if (!perms.permissions?.includes('webNavigation')) return;
+  try {
+    chrome.webNavigation?.onCommitted.removeListener(handleNavigation);
+    chrome.tabs.onActivated.removeListener(handleActivation);
+  } catch (e) { /* API already gone with the permission */ }
+  console.log("Feed Menu: discovery permission removed.");
 });
 
 // Main Discovery Logic
+async function hasDiscoveryPermission() {
+  try {
+    return await chrome.permissions.contains(DISCOVERY_PERMS);
+  } catch (e) {
+    return false;
+  }
+}
+
 async function handleNavigation(details) {
-  // Only handle top-level frame navigation
+  // Only handle top-level frame navigation.
   if (details.frameId !== 0) return;
+  // The listener is registered unconditionally (so the worker wakes), so gate
+  // on the permission here instead.
+  if (!(await hasDiscoveryPermission())) return;
   runSiteCheck(details.tabId, details.url);
 }
 
 async function handleActivation(activeInfo) {
+  if (!(await hasDiscoveryPermission())) return;
   const tab = await chrome.tabs.get(activeInfo.tabId);
   if (tab && tab.url) {
     runSiteCheck(tab.id, tab.url);
