@@ -220,6 +220,13 @@ header {
   gap: 8px;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
 h1 {
   font-size: 18px;
   font-weight: 600;
@@ -230,7 +237,8 @@ h1 {
   white-space: nowrap;
 }
 
-#reload-btn {
+.icon-btn {
+  position: relative;
   background: none;
   border: none;
   padding: 6px;
@@ -244,12 +252,12 @@ h1 {
   flex-shrink: 0;
 }
 
-#reload-btn:hover {
+.icon-btn:hover {
   background: var(--surface-hover);
   color: var(--text-primary);
 }
 
-#reload-btn:focus-visible {
+.icon-btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -261,6 +269,33 @@ h1 {
 #reload-btn:disabled {
   cursor: default;
   opacity: 0.6;
+}
+
+/* Gear reads as "active" while its panel is open. */
+#settings-btn[aria-expanded="true"] {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+/* A dot on the gear keeps auto-discover's on/off state glanceable without
+   opening the panel. The bg-colored ring punches it clear of the glyph. */
+.settings-indicator {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 1.5px solid var(--bg);
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity var(--motion-fast) var(--ease), transform var(--motion-fast) var(--ease);
+}
+
+#settings-btn.discovery-on .settings-indicator {
+  opacity: 1;
+  transform: scale(1);
 }
 
 p#site-url {
@@ -542,11 +577,14 @@ ul {
 /* =========================================================================
    Settings
    ========================================================================= */
+/* Revealed by the gear; collapsed by default so the resting popup is just
+   header + feed list. Slides in from the bottom edge it's anchored to. */
 .settings-section {
   padding: 14px 16px;
   background: var(--settings-bg);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
+  animation: slideUp var(--motion-med) var(--ease);
 }
 
 .settings-row {
@@ -617,6 +655,77 @@ input:checked + .slider:before {
 }
 
 .switch input:focus-visible + .slider {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* =========================================================================
+   First-run discovery offer
+
+   Occupies the bottom slot once, to introduce auto-discover at the moment
+   the user is deciding whether to invest. After they enable or dismiss it,
+   the setting lives only behind the gear.
+   ========================================================================= */
+.discovery-offer {
+  padding: 14px 16px;
+  background: var(--settings-bg);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  animation: slideUp var(--motion-med) var(--ease);
+}
+
+.offer-text {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+}
+
+.offer-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.offer-btn-primary,
+.offer-btn-secondary {
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--ease), border-color var(--motion-fast) var(--ease);
+}
+
+/* Tinted + accent-bordered rather than a filled blue fill: keeps the quiet,
+   native register, and sidesteps the mid-blue-on-white AA problem (accent-text
+   is the AA-safe accent in every skin). */
+.offer-btn-primary {
+  font-weight: 600;
+  color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.offer-btn-primary:hover {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  border-color: var(--accent);
+}
+
+.offer-btn-secondary {
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+.offer-btn-secondary:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+.offer-btn-primary:focus-visible,
+.offer-btn-secondary:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -758,6 +867,11 @@ input:checked + .slider:before {
 
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(5px); }
   to { opacity: 1; transform: translateY(0); }
 }
 

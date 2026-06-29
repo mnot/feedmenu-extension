@@ -137,35 +137,118 @@ document.addEventListener('DOMContentLoaded', async () => {
   reloadBtn.addEventListener('click', loadFeedMenu);
   retryBtn.addEventListener('click', loadFeedMenu);
 
-  // 6. Handle Discovery Toggle
+  // 6. Settings: the gear panel, the auto-discover toggle, and the one-time
+  //    first-run offer. Auto-discover is an optional permission, so it lives
+  //    quietly behind the gear once the user has made a choice about it.
+  const settingsBtn = document.getElementById('settings-btn');
+  const settingsPanel = document.getElementById('settings-panel');
   const discoveryToggle = document.getElementById('discovery-toggle');
+  const offerEl = document.getElementById('discovery-offer');
+  const offerEnableBtn = document.getElementById('offer-enable');
+  const offerDismissBtn = document.getElementById('offer-dismiss');
+
   const DISCOVERY_PERMS = {
     permissions: ['webNavigation'],
     origins: ['*://*/.well-known/feed-menu.json']
   };
+  const OFFER_DISMISSED_KEY = 'discoveryOfferDismissed';
 
-  // Sync toggle state with actual permissions
-  const hasPerms = await chrome.permissions.contains(DISCOVERY_PERMS);
-  discoveryToggle.checked = hasPerms;
+  // Keep the toggle and the gear's status dot in lockstep with the real
+  // permission state — the dot is the only at-a-glance signal once the panel
+  // is closed.
+  function syncDiscoveryState(enabled) {
+    discoveryToggle.checked = enabled;
+    settingsBtn.classList.toggle('discovery-on', enabled);
+  }
 
+  let hasPerms = false;
+  try {
+    hasPerms = await chrome.permissions.contains(DISCOVERY_PERMS);
+  } catch (e) {
+    hasPerms = false;
+  }
+  syncDiscoveryState(hasPerms);
+
+  // The offer appears only when discovery is off and the user hasn't yet
+  // chosen — enabling or dismissing it retires the offer for good.
+  if (!hasPerms) {
+    let dismissed = false;
+    try {
+      const stored = await chrome.storage.local.get(OFFER_DISMISSED_KEY);
+      dismissed = Boolean(stored && stored[OFFER_DISMISSED_KEY]);
+    } catch (e) {
+      dismissed = false;
+    }
+    if (!dismissed) offerEl.classList.remove('hidden');
+  }
+
+  function retireOffer() {
+    offerEl.classList.add('hidden');
+    Promise.resolve(chrome.storage.local.set({ [OFFER_DISMISSED_KEY]: true })).catch(() => {});
+  }
+
+  // Granting the permission needs a user gesture; the offer button and the
+  // panel toggle both route through here. Returns whether it was granted.
+  async function enableDiscovery() {
+    let granted = false;
+    try {
+      granted = await chrome.permissions.request(DISCOVERY_PERMS);
+    } catch (e) {
+      granted = false;
+    }
+    if (granted) {
+      syncDiscoveryState(true);
+      // Check the current tab right away so the icon lights up now, not on
+      // the next navigation.
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab) {
+        chrome.runtime.sendMessage({ type: 'CHECK_NOW', tabId: tab.id, url: tab.url });
+      }
+    }
+    return granted;
+  }
+
+  async function disableDiscovery() {
+    try {
+      await chrome.permissions.remove(DISCOVERY_PERMS);
+    } catch (e) { /* keep the current state if removal fails */ }
+    syncDiscoveryState(false);
+  }
+
+  function setPanelOpen(open) {
+    settingsPanel.classList.toggle('hidden', !open);
+    settingsBtn.setAttribute('aria-expanded', String(open));
+    // The panel is auto-discover's permanent home; don't stack it under the
+    // first-run offer for the same control.
+    if (open) offerEl.classList.add('hidden');
+  }
+
+  settingsBtn.addEventListener('click', () => {
+    setPanelOpen(settingsPanel.classList.contains('hidden'));
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !settingsPanel.classList.contains('hidden')) {
+      setPanelOpen(false);
+      settingsBtn.focus();
+    }
+  });
+
+  // First-run offer: either button is a decision, so the offer doesn't return.
+  offerEnableBtn.addEventListener('click', async () => {
+    await enableDiscovery();
+    retireOffer();
+  });
+  offerDismissBtn.addEventListener('click', retireOffer);
+
+  // Panel toggle: revert the optimistic check if the user denies the prompt.
   discoveryToggle.addEventListener('change', async () => {
     if (discoveryToggle.checked) {
-      const granted = await chrome.permissions.request(DISCOVERY_PERMS);
-      if (granted) {
-        // Trigger an immediate check for the current tab so it lights up now
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tab) {
-          chrome.runtime.sendMessage({ 
-            type: 'CHECK_NOW', 
-            tabId: tab.id, 
-            url: tab.url 
-          });
-        }
-      } else {
-        discoveryToggle.checked = false;
-      }
+      const granted = await enableDiscovery();
+      if (!granted) syncDiscoveryState(false);
+      retireOffer();
     } else {
-      await chrome.permissions.remove(DISCOVERY_PERMS);
+      await disableDiscovery();
     }
   });
 
