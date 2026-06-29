@@ -1,7 +1,9 @@
 // Background service worker for Feed Menu extension
 
+// Discovery only needs host access to fetch /.well-known/feed-menu.json from the
+// background — NOT webNavigation. We drive it off chrome.tabs.onUpdated rather
+// than chrome.webNavigation (see the listener block below for why).
 const DISCOVERY_PERMS = {
-  permissions: ['webNavigation'],
   origins: ['*://*/.well-known/feed-menu.json']
 };
 
@@ -34,48 +36,34 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 // Discovery listeners must be registered SYNCHRONOUSLY at the top level of the
-// service worker. MV3 background workers are non-persistent: Safari (and
-// Chrome) unload them when idle and only re-wake them for an event whose
-// listener was registered during the worker's *initial* evaluation. The old
-// code registered these inside an async function, after `await
-// permissions.contains(...)` — so once Safari suspended the worker it never
-// woke for navigations and discovery silently never ran (the background content
-// showed "Not Loaded"). Register up front instead, and gate on the permission
-// inside each handler.
+// service worker. MV3 background workers are non-persistent: Safari (and Chrome)
+// unload them when idle and only re-wake them for an event whose listener was
+// registered during the worker's *initial* evaluation.
 //
-// chrome.webNavigation only exists once the optional permission is granted, so
-// this fires whenever the permission is already in place at worker startup;
-// onAdded (below) covers granting it mid-session.
-function registerDiscoveryListeners() {
-  if (!chrome.webNavigation?.onCommitted) return;
-  // onCommitted fires earlier than onCompleted.
-  if (!chrome.webNavigation.onCommitted.hasListener(handleNavigation)) {
-    chrome.webNavigation.onCommitted.addListener(handleNavigation);
-  }
-  // Also catch tab switches, so the indicator is right for the active tab.
-  if (!chrome.tabs.onActivated.hasListener(handleActivation)) {
-    chrome.tabs.onActivated.addListener(handleActivation);
-  }
-}
-
-registerDiscoveryListeners();
+// chrome.tabs.onUpdated is always available — registering it needs no
+// permission — so the worker reliably wakes on navigation; we then gate the
+// actual fetch on host permission inside the handler. We deliberately do NOT use
+// chrome.webNavigation here: it only exists once its optional permission is
+// granted, and Safari grants host access (Settings -> Websites -> Allow) WITHOUT
+// it. So the old webNavigation listener never registered on Safari, the worker
+// never woke, and the indicator never appeared.
+chrome.tabs.onUpdated.addListener(handleTabUpdated);
+chrome.tabs.onActivated.addListener(handleActivation);
 
 // One-time startup diagnostic so the background console is conclusive about
-// whether discovery can run, rather than leaving us to infer from a silent
-// absence of activity.
+// whether discovery can run, rather than inferring from a silent absence.
 chrome.permissions.contains(DISCOVERY_PERMS)
   .then((hasPerms) => {
-    console.log(`Feed Menu: discovery permission=${hasPerms}, webNavigation API=${!!chrome.webNavigation}`);
+    console.log(`Feed Menu: safari=${IS_SAFARI}, discovery host permission=${hasPerms}`);
   })
   .catch(() => {});
 
-// Granting the permission mid-session makes chrome.webNavigation appear, so
-// register then too (the startup call above ran with it undefined) and check
-// the current tab right away so the indicator shows without waiting to navigate.
+// When host access is granted (Safari's Websites settings, or the Chrome/Firefox
+// toggle), check the current tab right away so the indicator appears without
+// waiting for the next navigation.
 chrome.permissions.onAdded.addListener(async (perms) => {
-  if (!perms.permissions?.includes('webNavigation')) return;
-  registerDiscoveryListeners();
-  console.log("Feed Menu: discovery permission granted.");
+  if (!perms.origins?.length) return;
+  console.log("Feed Menu: host permission granted.");
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab && tab.url) runSiteCheck(tab.id, tab.url);
@@ -83,12 +71,8 @@ chrome.permissions.onAdded.addListener(async (perms) => {
 });
 
 chrome.permissions.onRemoved.addListener((perms) => {
-  if (!perms.permissions?.includes('webNavigation')) return;
-  try {
-    chrome.webNavigation?.onCommitted.removeListener(handleNavigation);
-    chrome.tabs.onActivated.removeListener(handleActivation);
-  } catch (e) { /* API already gone with the permission */ }
-  console.log("Feed Menu: discovery permission removed.");
+  if (!perms.origins?.length) return;
+  console.log("Feed Menu: host permission removed.");
 });
 
 // Main Discovery Logic
@@ -100,13 +84,14 @@ async function hasDiscoveryPermission() {
   }
 }
 
-async function handleNavigation(details) {
-  // Only handle top-level frame navigation.
-  if (details.frameId !== 0) return;
-  // The listener is registered unconditionally (so the worker wakes), so gate
-  // on the permission here instead.
+// onUpdated fires repeatedly per navigation (loading, title, favicon, …); react
+// only when the address changes or the load completes, then gate on host
+// permission before fetching.
+async function handleTabUpdated(tabId, changeInfo, tab) {
+  if (!changeInfo.url && changeInfo.status !== 'complete') return;
   if (!(await hasDiscoveryPermission())) return;
-  runSiteCheck(details.tabId, details.url);
+  const url = changeInfo.url || tab?.url;
+  if (url) runSiteCheck(tabId, url);
 }
 
 async function handleActivation(activeInfo) {
