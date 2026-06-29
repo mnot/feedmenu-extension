@@ -11,7 +11,7 @@ To generate the Safari Web Extension Xcode project:
 ```bash
 make safari
 ```
-Then, open the generated `FeedMenu/FeedMenu.xcodeproj` and build in Xcode.
+Then, open the generated `build/safari/Feed Menu/Feed Menu.xcodeproj` and build in Xcode.
 
 ### Firefox
 To package the Firefox version:
