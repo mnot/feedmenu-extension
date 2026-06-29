@@ -140,14 +140,23 @@
       </div>
 
       <div id="settings-panel" class="settings-section hidden">
-        <div class="settings-row">
+        <div class="settings-row" id="discovery-row">
           <label for="discovery-toggle">Auto-discover feeds</label>
           <label class="switch">
             <input type="checkbox" id="discovery-toggle">
             <span class="slider"></span>
           </label>
         </div>
-        <p class="settings-help">Lights up the toolbar icon when the current site offers feeds. Needs permission to check sites as you browse.</p>
+        <p class="settings-help" id="discovery-help">Lights up the toolbar icon when the current site offers feeds. Needs permission to check sites as you browse.</p>
+        <p class="settings-help safari-guidance hidden" id="discovery-guidance-off">
+          Feed Menu can light up the toolbar icon when a site offers feeds. Safari
+          manages this access itself: click the Feed Menu icon in the toolbar and
+          choose <strong>Always Allow on Every Website</strong>.
+        </p>
+        <p class="settings-help safari-guidance hidden" id="discovery-guidance-on">
+          <strong>On.</strong> The toolbar icon lights up when a site offers feeds.
+          To change this, open Safari&nbsp;→&nbsp;Settings&nbsp;→&nbsp;Extensions&nbsp;→&nbsp;Feed&nbsp;Menu.
+        </p>
       </div>
     </div>
   </div>
@@ -251,10 +260,13 @@
   const stateSel = document.getElementById("ctl-state");
   const discSel = document.getElementById("ctl-discovery");
 
-  // Default skin (no platform.js here).
+  // Default skin (no platform.js here). Re-apply discovery on skin change so
+  // Safari's toggle-vs-guidance swap (which popup.js keys off data-platform)
+  // shows up when you flip to the Safari skin.
   root.setAttribute("data-platform", skinSel.value);
   skinSel.addEventListener("change", () => {
     root.setAttribute("data-platform", skinSel.value);
+    applyDiscovery(discSel.value);
   });
 
   // Populate state options from the stub's scenario map.
@@ -284,12 +296,18 @@
 
   function applyDiscovery(key) {
     const s = DISCOVERY_STATES[key];
-    document.getElementById("discovery-offer").classList.toggle("hidden", !s.offer);
+    const safari = skinSel.value === "safari";
+    // Safari drops the offer entirely and swaps the toggle for guidance.
+    document.getElementById("discovery-offer").classList.toggle("hidden", !s.offer || safari);
     document.getElementById("settings-panel").classList.toggle("hidden", !s.panel);
     const gear = document.getElementById("settings-btn");
     gear.classList.toggle("discovery-on", s.on);
     gear.setAttribute("aria-expanded", String(s.panel));
     document.getElementById("discovery-toggle").checked = s.on;
+    document.getElementById("discovery-row").classList.toggle("hidden", safari);
+    document.getElementById("discovery-help").classList.toggle("hidden", safari);
+    document.getElementById("discovery-guidance-off").classList.toggle("hidden", !safari || s.on);
+    document.getElementById("discovery-guidance-on").classList.toggle("hidden", !safari || !s.on);
   }
 
   for (const [key, s] of Object.entries(DISCOVERY_STATES)) {
