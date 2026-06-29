@@ -5,6 +5,25 @@ const DISCOVERY_PERMS = {
   origins: ['*://*/.well-known/feed-menu.json']
 };
 
+// Safari renders the toolbar icon as a template image: it discards the PNG's
+// colors and tints the shape with the system highlight color (blue). That
+// erases the active/default *color* swap we use to signal feed-availability on
+// Chrome and Firefox — both states look identical there. A badge is not
+// template-tinted, so it's the reliable "this site has feeds" signal on Safari.
+// We add it on Safari only; the other browsers already convey state through the
+// icon color and a badge would just clutter the quiet button.
+const IS_SAFARI = (() => {
+  try {
+    if ((navigator.vendor || '').indexOf('Apple') !== -1) return true;
+    const ua = navigator.userAgent || '';
+    return /Safari/.test(ua) && !/Chrome|Chromium|Edg\//.test(ua);
+  } catch (e) {
+    return false;
+  }
+})();
+
+const FEED_BADGE_COLOR = '#EE802F'; // feed orange, distinct from Safari's blue tint
+
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 chrome.runtime.onInstalled.addListener((details) => {
@@ -168,4 +187,23 @@ function setToolbarIcon(tabId, type) {
   }).catch(() => {
     // Ignore errors if tab is already closed
   });
+
+  setFeedBadge(tabId, type === 'active');
+}
+
+// On Safari, mark the button with a small badge when the site has feeds (and
+// clear it otherwise), since the icon color swap above is invisible there.
+// No-op on other browsers, which signal via the icon color instead.
+function setFeedBadge(tabId, hasFeed) {
+  if (!IS_SAFARI || !chrome.action || !chrome.action.setBadgeText) return;
+
+  Promise.resolve(
+    chrome.action.setBadgeText({ tabId: tabId, text: hasFeed ? '•' : '' })
+  ).catch(() => {});
+
+  if (hasFeed && chrome.action.setBadgeBackgroundColor) {
+    Promise.resolve(
+      chrome.action.setBadgeBackgroundColor({ tabId: tabId, color: FEED_BADGE_COLOR })
+    ).catch(() => {});
+  }
 }
