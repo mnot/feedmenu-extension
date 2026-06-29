@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome to Feed Menu</title>
+  <!-- Sets data-platform before first paint so the right skin and the right
+       set of setup steps render without a flash of the wrong one. -->
+  <script src="platform.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="onboarding-body">
@@ -26,27 +29,70 @@
       </p>
     </section>
 
-    <p class="onboarding-steps-lead">To get started, pin Feed Menu to your toolbar:</p>
+    <!-- One block per platform; CSS shows only the one matching data-platform.
+         The steps differ by browser: Chrome/Firefox pin from the puzzle-piece
+         Extensions menu, while Safari has neither a puzzle piece nor a "pin" —
+         it's enabled in Settings and grants site access on first use. -->
+    <div class="onboarding-steps onboarding-steps--chrome">
+      <p class="onboarding-steps-lead">To get started, pin Feed Menu to your toolbar:</p>
 
-    <div class="instruction-step">
-      <div class="step-number">1</div>
-      <div class="step-text">
-        Click the <strong>Extensions</strong> icon (puzzle piece) in the top right of your browser.
+      <div class="instruction-step">
+        <div class="step-number">1</div>
+        <div class="step-text">
+          Click the <strong>Extensions</strong> icon (puzzle piece) in the top right of your browser.
+        </div>
+      </div>
+
+      <div class="instruction-step">
+        <div class="step-number">2</div>
+        <div class="step-text">
+          Find <strong>Feed Menu</strong> and click the <span class="pin-icon-demo">Pin</span> icon.
+        </div>
       </div>
     </div>
 
-    <div class="instruction-step">
-      <div class="step-number">2</div>
-      <div class="step-text">
-        Find <strong>Feed Menu</strong> and click the <span class="pin-icon-demo">Pin</span> icon.
+    <div class="onboarding-steps onboarding-steps--firefox">
+      <p class="onboarding-steps-lead">To get started, pin Feed Menu to your toolbar:</p>
+
+      <div class="instruction-step">
+        <div class="step-number">1</div>
+        <div class="step-text">
+          Click the <strong>Extensions</strong> icon (puzzle piece) in your toolbar.
+        </div>
+      </div>
+
+      <div class="instruction-step">
+        <div class="step-number">2</div>
+        <div class="step-text">
+          Next to <strong>Feed Menu</strong>, click the gear and choose <span class="pin-icon-demo">Pin to Toolbar</span>.
+        </div>
+      </div>
+    </div>
+
+    <div class="onboarding-steps onboarding-steps--safari">
+      <p class="onboarding-steps-lead">To get started, turn Feed Menu on:</p>
+
+      <div class="instruction-step">
+        <div class="step-number">1</div>
+        <div class="step-text">
+          Open <strong>Safari&nbsp;→&nbsp;Settings&nbsp;→&nbsp;Extensions</strong> and switch on
+          <strong>Feed Menu</strong>. Its icon then appears in your toolbar.
+        </div>
+      </div>
+
+      <div class="instruction-step">
+        <div class="step-number">2</div>
+        <div class="step-text">
+          Click the <strong>Feed Menu</strong> icon on any site. The first time, Safari asks to
+          allow access — choose <span class="pin-icon-demo">Allow</span> to see that site's feeds.
+        </div>
       </div>
     </div>
 
     <div class="onboarding-footer">
-      Once pinned, the Feed Menu icon is always one click away. Open any site and
-      click it to see the feeds you can follow. You can also let the icon light up
-      on its own when a site offers feeds — just turn that on the first time you
-      open Feed Menu, or anytime from the gear.
+      The Feed Menu icon is always one click away. Open any site and click it to
+      see the feeds you can follow. You can also let the icon light up on its own
+      when a site offers feeds — turn that on anytime from the gear&nbsp;(⚙︎).
     </div>
   </div>
 </body>
