@@ -157,8 +157,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // both and point the user at Safari's own controls instead.
   const isSafari = document.documentElement.dataset.platform === 'safari';
 
+  // Discovery needs host access only (to fetch /.well-known/feed-menu.json in
+  // the background) — not webNavigation; the worker drives off tabs.onUpdated.
   const DISCOVERY_PERMS = {
-    permissions: ['webNavigation'],
     origins: ['*://*/.well-known/feed-menu.json']
   };
   const OFFER_DISMISSED_KEY = 'discoveryOfferDismissed';
@@ -178,6 +179,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     hasPerms = false;
   }
   syncDiscoveryState(hasPerms);
+
+  // Diagnostic: what does the browser actually report as granted? The popup
+  // console is reliable (the discovery service worker's is not, since it's
+  // suspended most of the time), so this is where we pin down Safari's
+  // host-permission behaviour. Remove once discovery is confirmed working.
+  (async () => {
+    const survey = { platform: document.documentElement.dataset.platform, discoveryHostPattern: hasPerms };
+    try {
+      const [t] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (t?.url?.startsWith('http')) {
+        const path = `${new URL(t.url).origin}/.well-known/feed-menu.json`;
+        survey.currentSitePath = await chrome.permissions.contains({ origins: [path] }).catch((e) => `err:${e.message}`);
+      }
+    } catch (e) { /* no usable tab */ }
+    console.log('[Feed Menu] permission survey', survey);
+  })();
 
   // On Safari, swap the toggle for guidance and never show the first-run
   // offer — there's nothing a JS gesture can grant. The guidance tracks the

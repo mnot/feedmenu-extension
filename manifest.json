@@ -8,9 +8,6 @@
     "storage",
     "scripting"
   ],
-  "optional_permissions": [
-    "webNavigation"
-  ],
   "optional_host_permissions": [
     "*://*/.well-known/feed-menu.json"
   ],
