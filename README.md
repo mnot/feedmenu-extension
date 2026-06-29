@@ -11,7 +11,20 @@ To generate the Safari Web Extension Xcode project:
 ```bash
 make safari
 ```
-Then, open the generated `build/safari/Feed Menu/Feed Menu.xcodeproj` and build in Xcode.
+Then open `build/safari/Feed Menu/Feed Menu.xcodeproj` and build & run in Xcode.
+
+Because the extension is unsigned, you must allow it in Safari before it
+will appear:
+
+1. Quit and reopen Safari once after building, so it picks up the extension.
+2. Safari → Settings → **Advanced** → enable **"Show features for web developers"**.
+3. Safari → Settings → **Developer** → enable **"Allow unsigned extensions"**
+   (this resets every time Safari restarts).
+4. Safari → Settings → **Extensions** → enable **Feed Menu**.
+
+> The "Feed Menu" app that launches after building is just a signpost; its
+> "Open Safari Extensions Preferences" button often does nothing for unsigned
+> dev builds. Use the manual steps above instead.
 
 ### Firefox
 To package the Firefox version:
