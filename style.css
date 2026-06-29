@@ -801,6 +801,22 @@ input:checked + .slider:before {
   text-wrap: pretty;
 }
 
+/* Show only the setup steps for the detected platform. Chrome is the default
+   so the steps still render if platform.js somehow didn't run; Firefox/Safari
+   swap in their own block and hide Chrome's. */
+.onboarding-steps--firefox,
+.onboarding-steps--safari {
+  display: none;
+}
+[data-platform="firefox"] .onboarding-steps--chrome,
+[data-platform="safari"] .onboarding-steps--chrome {
+  display: none;
+}
+[data-platform="firefox"] .onboarding-steps--firefox,
+[data-platform="safari"] .onboarding-steps--safari {
+  display: block;
+}
+
 .onboarding-steps-lead {
   text-align: left;
   font-size: 14px;

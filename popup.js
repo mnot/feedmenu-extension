@@ -143,9 +143,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   const settingsBtn = document.getElementById('settings-btn');
   const settingsPanel = document.getElementById('settings-panel');
   const discoveryToggle = document.getElementById('discovery-toggle');
+  const discoveryRow = document.getElementById('discovery-row');
+  const discoveryHelp = document.getElementById('discovery-help');
+  const guidanceOff = document.getElementById('discovery-guidance-off');
+  const guidanceOn = document.getElementById('discovery-guidance-on');
   const offerEl = document.getElementById('discovery-offer');
   const offerEnableBtn = document.getElementById('offer-enable');
   const offerDismissBtn = document.getElementById('offer-dismiss');
+
+  // Safari doesn't honor the Chrome optional-permission flow: permissions
+  // .request() surfaces no working prompt for host access, so the toggle and
+  // the first-run offer can't actually grant anything there. On Safari we drop
+  // both and point the user at Safari's own controls instead.
+  const isSafari = document.documentElement.dataset.platform === 'safari';
 
   const DISCOVERY_PERMS = {
     permissions: ['webNavigation'],
@@ -169,9 +179,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   syncDiscoveryState(hasPerms);
 
+  // On Safari, swap the toggle for guidance and never show the first-run
+  // offer — there's nothing a JS gesture can grant. The guidance tracks the
+  // real permission state so it reads "how to turn on" vs. "it's on".
+  if (isSafari) {
+    discoveryRow.classList.add('hidden');
+    discoveryHelp.classList.add('hidden');
+    guidanceOff.classList.toggle('hidden', hasPerms);
+    guidanceOn.classList.toggle('hidden', !hasPerms);
+  }
+
   // The offer appears only when discovery is off and the user hasn't yet
-  // chosen — enabling or dismissing it retires the offer for good.
-  if (!hasPerms) {
+  // chosen — enabling or dismissing it retires the offer for good. Skipped on
+  // Safari, where its "Turn on" button can't deliver the permission.
+  if (!isSafari && !hasPerms) {
     let dismissed = false;
     try {
       const stored = await chrome.storage.local.get(OFFER_DISMISSED_KEY);
