@@ -50,29 +50,15 @@ chrome.runtime.onInstalled.addListener((details) => {
 chrome.tabs.onUpdated.addListener(handleTabUpdated);
 chrome.tabs.onActivated.addListener(handleActivation);
 
-// One-time startup diagnostic so the background console is conclusive about
-// whether discovery can run, rather than inferring from a silent absence.
-chrome.permissions.contains(DISCOVERY_PERMS)
-  .then((hasPerms) => {
-    console.log(`Feed Menu: safari=${IS_SAFARI}, discovery host permission=${hasPerms}`);
-  })
-  .catch(() => {});
-
 // When host access is granted (Safari's Websites settings, or the Chrome/Firefox
 // toggle), check the current tab right away so the indicator appears without
 // waiting for the next navigation.
 chrome.permissions.onAdded.addListener(async (perms) => {
   if (!perms.origins?.length) return;
-  console.log("Feed Menu: host permission granted.");
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab && tab.url) runSiteCheck(tab.id, tab.url);
   } catch (e) { /* no active tab to check */ }
-});
-
-chrome.permissions.onRemoved.addListener((perms) => {
-  if (!perms.origins?.length) return;
-  console.log("Feed Menu: host permission removed.");
 });
 
 // Main Discovery Logic
