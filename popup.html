@@ -13,9 +13,15 @@
     <header>
       <div class="header-main">
         <h1>Feed Menu</h1>
-        <button id="reload-btn" title="Reload Feed Menu" aria-label="Reload">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-        </button>
+        <div class="header-actions">
+          <button id="reload-btn" class="icon-btn" title="Reload Feed Menu" aria-label="Reload">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          </button>
+          <button id="settings-btn" type="button" class="icon-btn" title="Settings" aria-label="Settings" aria-haspopup="true" aria-expanded="false" aria-controls="settings-panel">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span class="settings-indicator" aria-hidden="true"></span>
+          </button>
+        </div>
       </div>
       <p id="site-url"></p>
     </header>
@@ -44,15 +50,23 @@
       </div>
     </main>
 
-    <div class="settings-section">
+    <div id="discovery-offer" class="discovery-offer hidden">
+      <p class="offer-text">Want the toolbar icon to light up when a site offers feeds?</p>
+      <div class="offer-actions">
+        <button type="button" id="offer-enable" class="offer-btn-primary">Turn on</button>
+        <button type="button" id="offer-dismiss" class="offer-btn-secondary">Not now</button>
+      </div>
+    </div>
+
+    <div id="settings-panel" class="settings-section hidden">
       <div class="settings-row">
-        <span>Auto-Discover Feeds</span>
+        <label for="discovery-toggle">Auto-discover feeds</label>
         <label class="switch">
           <input type="checkbox" id="discovery-toggle">
           <span class="slider"></span>
         </label>
       </div>
-      <p class="settings-help">Highlights the icon when feeds are found. Requires additional permission.</p>
+      <p class="settings-help">Lights up the toolbar icon when the current site offers feeds. Needs permission to check sites as you browse.</p>
     </div>
   </div>
   <script src="popup.js"></script>
