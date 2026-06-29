@@ -51,7 +51,7 @@
     </main>
 
     <div id="discovery-offer" class="discovery-offer hidden">
-      <p class="offer-text">Want the toolbar icon to light up when a site offers feeds?</p>
+      <p class="offer-text">Want an indicator on the toolbar icon when a site offers feeds?</p>
       <div class="offer-actions">
         <button type="button" id="offer-enable" class="offer-btn-primary">Turn on</button>
         <button type="button" id="offer-dismiss" class="offer-btn-secondary">Not now</button>
@@ -66,19 +66,19 @@
           <span class="slider"></span>
         </label>
       </div>
-      <p class="settings-help" id="discovery-help">Lights up the toolbar icon when the current site offers feeds. Needs permission to check sites as you browse.</p>
+      <p class="settings-help" id="discovery-help">Shows an indicator on the toolbar icon when the current site offers feeds. Needs permission to check sites as you browse.</p>
 
       <!-- Safari grants host access through its own UI, not a JS toggle
            (permissions.request surfaces no working prompt there), so on Safari
            popup.js hides the switch above and shows one of these instead. -->
       <p class="settings-help safari-guidance hidden" id="discovery-guidance-off">
-        Feed Menu can light up the toolbar icon when a site offers feeds. Safari
-        manages this access itself: open <strong>Safari → Settings → Websites →
-        Feed Menu</strong> and set <strong>For other websites</strong> to
-        <strong>Allow</strong>.
+        Optional: Feed Menu can show an indicator on the toolbar icon when a site
+        offers feeds. Safari manages this access itself — open <strong>Safari →
+        Settings → Websites → Feed Menu</strong> and set <strong>For other
+        websites</strong> to <strong>Allow</strong>.
       </p>
       <p class="settings-help safari-guidance hidden" id="discovery-guidance-on">
-        <strong>On.</strong> The toolbar icon lights up when a site offers feeds.
+        <strong>On.</strong> Feed Menu shows an indicator when a site offers feeds.
         To change this, open Safari&nbsp;→&nbsp;Settings&nbsp;→&nbsp;Extensions&nbsp;→&nbsp;Feed&nbsp;Menu.
       </p>
     </div>
