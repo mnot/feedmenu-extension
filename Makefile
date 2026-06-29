@@ -10,7 +10,7 @@ SAFARI_DIR = $(BUILD_DIR)/safari
 # Web-extension files shared by every target
 EXT_FILES = icons background.js platform.js popup.js popup.html onboarding.html style.css
 
-.PHONY: all safari firefox clean
+.PHONY: all safari safari-run firefox clean
 
 all: safari firefox
 
@@ -27,6 +27,22 @@ safari: clean
 		--copy-resources \
 		--no-open --no-prompt \
 		--force
+
+# Regenerate the Xcode project, build it, and launch the container app — which
+# registers/refreshes the Safari extension. Saves the manual open-Xcode-and-hit-
+# Run step on each iteration. You still enable it once in Safari Settings ->
+# Extensions, and (for unsigned dev builds) re-allow unsigned extensions after a
+# Safari restart. Picks the macOS scheme automatically.
+safari-run: safari
+	@PROJ="$(SAFARI_DIR)/Feed Menu/Feed Menu.xcodeproj"; \
+	SCHEME=$$(xcodebuild -project "$$PROJ" -list 2>/dev/null | awk '/Schemes:/{f=1;next} f&&NF{gsub(/^[ \t]+/,"");print}' | grep -i 'macos' | head -1); \
+	[ -z "$$SCHEME" ] && SCHEME=$$(xcodebuild -project "$$PROJ" -list 2>/dev/null | awk '/Schemes:/{f=1;next} f&&NF{gsub(/^[ \t]+/,"");print; exit}'); \
+	echo "Building scheme: $$SCHEME"; \
+	xcodebuild -project "$$PROJ" -scheme "$$SCHEME" -configuration Debug -derivedDataPath "$(SAFARI_DIR)/DerivedData" build || exit 1; \
+	APP=$$(/usr/bin/find "$(SAFARI_DIR)/DerivedData/Build/Products" -maxdepth 2 -name '*.app' -type d | head -1); \
+	[ -z "$$APP" ] && { echo "Build succeeded but no .app found"; exit 1; }; \
+	echo "Launching $$APP"; \
+	open "$$APP"
 
 firefox:
 	@echo "Packaging Firefox version..."
